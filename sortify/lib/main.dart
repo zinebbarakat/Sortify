@@ -1,21 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(const SortifyApp());
-}
-
-class SortifyApp extends StatelessWidget {
-  const SortifyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Sortify',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(scaffoldBackgroundColor: const Color(0xFFFAF7F0)),
-      home: const MainShell(),
-    );
-  }
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => RecycleState(),
+      child: const SortifyApp(),
+    ),
+  );
 }
 
 // ─── COLORS ───────────────────────────────────────────
@@ -43,6 +35,51 @@ class RecycleItem {
     required this.tip,
     required this.didYouKnow,
   });
+}
+
+// ─── STATE MANAGEMENT ─────────────────────────────────
+class RecycleState extends ChangeNotifier {
+  final List<Map<String, dynamic>> _recycledItems = [];
+
+  List<Map<String, dynamic>> get recycledItems => _recycledItems;
+
+  int get totalCount => _recycledItems.length;
+
+  void addItem(RecycleItem item) {
+    _recycledItems.add({
+      'item': item,
+      'timestamp': DateTime.now(),
+    });
+    notifyListeners();
+  }
+
+  // Returns count per day of week (0=Mon, 6=Sun)
+  List<double> get weeklyData {
+    final now = DateTime.now();
+    final counts = List<double>.filled(7, 0);
+    for (final entry in _recycledItems) {
+      final date = entry['timestamp'] as DateTime;
+      final diff = now.difference(date).inDays;
+      if (diff < 7) {
+        final dayIndex = date.weekday - 1; // 0=Mon
+        counts[dayIndex]++;
+      }
+    }
+    // Normalize to 0.0–1.0 for chart
+    final max = counts.reduce((a, b) => a > b ? a : b);
+    if (max == 0) return List<double>.filled(7, 0.1);
+    return counts.map((c) => c / max).toList();
+  }
+
+  bool get hasFirstPlastic => _recycledItems
+      .any((e) => (e['item'] as RecycleItem).bin == 'Yellow bin');
+
+  bool get has7DayStreak => totalCount >= 7;
+
+  bool get has25Items => totalCount >= 25;
+
+  // Rough CO2 equivalent: each item = ~0.05kg plastic bottle equivalent
+  int get bottleEquivalent => (totalCount * 0.72).round();
 }
 
 // ─── MOCK DATABASE ────────────────────────────────────
@@ -73,8 +110,7 @@ const List<RecycleItem> itemDatabase = [
     color: Color(0xFFFFE066),
     textColor: Color(0xFF5C4500),
     tip: 'Empty and rinse. Remove the plastic lid separately.',
-    didYouKnow:
-        'Most disposable coffee cups are lined with plastic, making them hard to recycle.',
+    didYouKnow: 'Most disposable coffee cups are lined with plastic.',
   ),
   RecycleItem(
     name: 'Shampoo bottle',
@@ -83,8 +119,7 @@ const List<RecycleItem> itemDatabase = [
     color: Color(0xFFFFE066),
     textColor: Color(0xFF5C4500),
     tip: 'Rinse thoroughly before recycling.',
-    didYouKnow:
-        'Shampoo bottles are usually made of HDPE, one of the most recyclable plastics.',
+    didYouKnow: 'Shampoo bottles are usually made of HDPE, one of the most recyclable plastics.',
   ),
   RecycleItem(
     name: 'Plastic bag',
@@ -93,8 +128,7 @@ const List<RecycleItem> itemDatabase = [
     color: Color(0xFFFFE066),
     textColor: Color(0xFF5C4500),
     tip: 'Make sure it is clean and dry before recycling.',
-    didYouKnow:
-        'Recycled plastic bags can be turned into new bags or outdoor furniture.',
+    didYouKnow: 'Recycled plastic bags can be turned into new bags or outdoor furniture.',
   ),
   RecycleItem(
     name: 'Detergent bottle',
@@ -103,8 +137,7 @@ const List<RecycleItem> itemDatabase = [
     color: Color(0xFFFFE066),
     textColor: Color(0xFF5C4500),
     tip: 'Rinse out any remaining detergent before recycling.',
-    didYouKnow:
-        'Detergent bottles are often made from recycled plastic themselves.',
+    didYouKnow: 'Detergent bottles are often made from recycled plastic themselves.',
   ),
   RecycleItem(
     name: 'Food tray',
@@ -113,8 +146,7 @@ const List<RecycleItem> itemDatabase = [
     color: Color(0xFFFFE066),
     textColor: Color(0xFF5C4500),
     tip: 'Rinse off any food residue before placing in the bin.',
-    didYouKnow:
-        'Plastic trays can be recycled into new containers or garden furniture.',
+    didYouKnow: 'Plastic trays can be recycled into new containers or garden furniture.',
   ),
   RecycleItem(
     name: 'Milk carton',
@@ -123,10 +155,8 @@ const List<RecycleItem> itemDatabase = [
     color: Color(0xFFFFE066),
     textColor: Color(0xFF5C4500),
     tip: 'Rinse and flatten before recycling.',
-    didYouKnow:
-        'Milk cartons are made of layers of paper, plastic and aluminium.',
+    didYouKnow: 'Milk cartons are made of layers of paper, plastic and aluminium.',
   ),
-
   // ── PAPER (Blue bin) ──
   RecycleItem(
     name: 'Newspaper',
@@ -153,8 +183,7 @@ const List<RecycleItem> itemDatabase = [
     color: Color(0xFFA4C8E1),
     textColor: Color(0xFF1A3A52),
     tip: 'Only if it is not greasy. Greasy boxes go in the gray bin.',
-    didYouKnow:
-        'Recycled cardboard uses 75% less energy than making new cardboard.',
+    didYouKnow: 'Recycled cardboard uses 75% less energy than making new cardboard.',
   ),
   RecycleItem(
     name: 'Office paper',
@@ -163,8 +192,7 @@ const List<RecycleItem> itemDatabase = [
     color: Color(0xFFA4C8E1),
     textColor: Color(0xFF1A3A52),
     tip: 'Remove any staples or paper clips before recycling.',
-    didYouKnow:
-        'Recycling one sheet of paper saves enough energy to power a light bulb for an hour.',
+    didYouKnow: 'Recycling one sheet of paper saves enough energy to power a light bulb for an hour.',
   ),
   RecycleItem(
     name: 'Cereal box',
@@ -173,8 +201,7 @@ const List<RecycleItem> itemDatabase = [
     color: Color(0xFFA4C8E1),
     textColor: Color(0xFF1A3A52),
     tip: 'Remove the plastic inner bag first. Flatten the box.',
-    didYouKnow:
-        'Cereal boxes are made of paperboard, which is highly recyclable.',
+    didYouKnow: 'Cereal boxes are made of paperboard, which is highly recyclable.',
   ),
   RecycleItem(
     name: 'Egg carton',
@@ -192,8 +219,7 @@ const List<RecycleItem> itemDatabase = [
     color: Color(0xFFA4C8E1),
     textColor: Color(0xFF1A3A52),
     tip: 'Remove any plastic covers or inserts before recycling.',
-    didYouKnow:
-        'Magazines are printed on coated paper, which is still fully recyclable.',
+    didYouKnow: 'Magazines are printed on coated paper, which is still fully recyclable.',
   ),
   RecycleItem(
     name: 'Paper bag',
@@ -204,7 +230,6 @@ const List<RecycleItem> itemDatabase = [
     tip: 'Remove any handles or staples before recycling.',
     didYouKnow: 'Paper bags decompose much faster than plastic bags.',
   ),
-
   // ── GLASS (Green bin) ──
   RecycleItem(
     name: 'Glass bottle',
@@ -222,8 +247,7 @@ const List<RecycleItem> itemDatabase = [
     color: Color(0xFFB5D5A7),
     textColor: Color(0xFF2A4D1F),
     tip: 'Remove the cork and foil before placing in the bin.',
-    didYouKnow:
-        'Recycling one glass bottle saves enough energy to power a TV for 20 minutes.',
+    didYouKnow: 'Recycling one glass bottle saves enough energy to power a TV for 20 minutes.',
   ),
   RecycleItem(
     name: 'Glass jar',
@@ -250,10 +274,8 @@ const List<RecycleItem> itemDatabase = [
     color: Color(0xFFB5D5A7),
     textColor: Color(0xFF2A4D1F),
     tip: 'Remove the pump or spray top before recycling.',
-    didYouKnow:
-        'Glass perfume bottles can be melted and reshaped into new glass products.',
+    didYouKnow: 'Glass perfume bottles can be melted and reshaped into new glass products.',
   ),
-
   // ── ORGANIC (Brown bin) ──
   RecycleItem(
     name: 'Banana peel',
@@ -271,8 +293,7 @@ const List<RecycleItem> itemDatabase = [
     color: Color(0xFFC9B49A),
     textColor: Color(0xFF4A3520),
     tip: 'Let them cool before placing in the bin.',
-    didYouKnow:
-        'Coffee grounds are rich in nitrogen, making excellent compost.',
+    didYouKnow: 'Coffee grounds are rich in nitrogen, making excellent compost.',
   ),
   RecycleItem(
     name: 'Apple core',
@@ -281,8 +302,7 @@ const List<RecycleItem> itemDatabase = [
     color: Color(0xFFC9B49A),
     textColor: Color(0xFF4A3520),
     tip: 'Goes directly into the organic bin.',
-    didYouKnow:
-        'Fruit scraps decompose in as little as 2 weeks in a compost bin.',
+    didYouKnow: 'Fruit scraps decompose in as little as 2 weeks in a compost bin.',
   ),
   RecycleItem(
     name: 'Eggshells',
@@ -291,8 +311,7 @@ const List<RecycleItem> itemDatabase = [
     color: Color(0xFFC9B49A),
     textColor: Color(0xFF4A3520),
     tip: 'Rinse lightly and place directly in the organic bin.',
-    didYouKnow:
-        'Eggshells add calcium to compost, which helps plants grow stronger.',
+    didYouKnow: 'Eggshells add calcium to compost, which helps plants grow stronger.',
   ),
   RecycleItem(
     name: 'Bread',
@@ -301,8 +320,7 @@ const List<RecycleItem> itemDatabase = [
     color: Color(0xFFC9B49A),
     textColor: Color(0xFF4A3520),
     tip: 'Place directly in the organic bin, even if moldy.',
-    didYouKnow:
-        'Food waste in landfills produces methane, a powerful greenhouse gas.',
+    didYouKnow: 'Food waste in landfills produces methane, a powerful greenhouse gas.',
   ),
   RecycleItem(
     name: 'Vegetable scraps',
@@ -311,8 +329,7 @@ const List<RecycleItem> itemDatabase = [
     color: Color(0xFFC9B49A),
     textColor: Color(0xFF4A3520),
     tip: 'Collect scraps in a small container and empty daily.',
-    didYouKnow:
-        'Vegetable compost can replace chemical fertilizers in gardens.',
+    didYouKnow: 'Vegetable compost can replace chemical fertilizers in gardens.',
   ),
   RecycleItem(
     name: 'Tea bags',
@@ -334,7 +351,24 @@ const List<RecycleItem> itemDatabase = [
   ),
 ];
 
-// ─── MAIN SHELL (bottom nav) ──────────────────────────
+// ─── APP ──────────────────────────────────────────────
+class SortifyApp extends StatelessWidget {
+  const SortifyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Sortify',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        scaffoldBackgroundColor: kCream,
+      ),
+      home: const MainShell(),
+    );
+  }
+}
+
+// ─── MAIN SHELL ───────────────────────────────────────
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -345,7 +379,10 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [HomeScreen(), ProgressScreen()];
+  final List<Widget> _screens = const [
+    HomeScreen(),
+    ProgressScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -411,6 +448,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<RecycleState>();
+
     return Scaffold(
       backgroundColor: kCream,
       body: SafeArea(
@@ -448,21 +487,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: InputDecoration(
                         hintText: 'Search an item...',
                         hintStyle: const TextStyle(color: Colors.grey),
-                        prefixIcon: const Icon(
-                          Icons.search,
-                          color: Colors.grey,
-                        ),
+                        prefixIcon:
+                            const Icon(Icons.search, color: Colors.grey),
                         suffixIcon: IconButton(
-                          icon: const Icon(
-                            Icons.arrow_forward,
-                            color: kDarkGreen,
-                          ),
+                          icon: const Icon(Icons.arrow_forward,
+                              color: kDarkGreen),
                           onPressed: _search,
                         ),
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 14,
-                        ),
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 14),
                       ),
                     ),
                   ),
@@ -487,87 +521,102 @@ class _HomeScreenState extends State<HomeScreen> {
                       CategoryButton(
                         label: 'Plastic',
                         icon: Icons.delete_outline,
-                        color: const Color(0xFFFFE066),
-                        textColor: const Color(0xFF5C4500),
+                        color: Color(0xFFFFE066),
+                        textColor: Color(0xFF5C4500),
                         filterKey: 'yellow',
                       ),
                       CategoryButton(
                         label: 'Paper',
                         icon: Icons.article_outlined,
-                        color: const Color(0xFFA4C8E1),
-                        textColor: const Color(0xFF1A3A52),
+                        color: Color(0xFFA4C8E1),
+                        textColor: Color(0xFF1A3A52),
                         filterKey: 'blue',
                       ),
                       CategoryButton(
                         label: 'Glass',
                         icon: Icons.wine_bar_outlined,
-                        color: const Color(0xFFB5D5A7),
-                        textColor: const Color(0xFF2A4D1F),
+                        color: Color(0xFFB5D5A7),
+                        textColor: Color(0xFF2A4D1F),
                         filterKey: 'green',
                       ),
                       CategoryButton(
                         label: 'Organic',
                         icon: Icons.eco_outlined,
-                        color: const Color(0xFFC9B49A),
-                        textColor: const Color(0xFF4A3520),
+                        color: Color(0xFFC9B49A),
+                        textColor: Color(0xFF4A3520),
                         filterKey: 'brown',
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: kCardBg,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'LAST ITEM',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.grey,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: const [
-                            Text(
-                              'Coffee cup',
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: kDarkGreen,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            SizedBox(width: 8),
-                            Icon(
-                              Icons.arrow_forward,
-                              size: 14,
+
+                  // ── LAST ITEM ──
+                  if (state.recycledItems.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: kCardBg,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'LAST ITEM',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
                               color: Colors.grey,
+                              letterSpacing: 1.5,
                             ),
-                            SizedBox(width: 8),
-                            Text(
-                              'Yellow bin',
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: kDarkGreen,
-                                fontWeight: FontWeight.w500,
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Text(
+                                (state.recycledItems.last['item']
+                                        as RecycleItem)
+                                    .name,
+                                style: const TextStyle(
+                                    fontSize: 15,
+                                    color: kDarkGreen,
+                                    fontWeight: FontWeight.w500),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                              const SizedBox(width: 8),
+                              const Icon(Icons.arrow_forward,
+                                  size: 14, color: Colors.grey),
+                              const SizedBox(width: 8),
+                              Text(
+                                (state.recycledItems.last['item']
+                                        as RecycleItem)
+                                    .bin,
+                                style: const TextStyle(
+                                    fontSize: 15,
+                                    color: kDarkGreen,
+                                    fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                  if (state.recycledItems.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: kCardBg,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        'No items recycled yet — start searching!',
+                        style: TextStyle(fontSize: 14, color: Colors.grey),
+                      ),
+                    ),
                   const Spacer(),
+
+                  // ── COUNTER PILL (real data) ──
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -575,10 +624,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: kDarkGreen,
                       borderRadius: BorderRadius.circular(30),
                     ),
-                    child: const Text(
-                      '23 items sorted this week',
+                    child: Text(
+                      '${state.totalCount} items sorted this week',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: kYellow,
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
@@ -602,6 +651,8 @@ class ResultScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final state = context.read<RecycleState>();
+
     return Scaffold(
       backgroundColor: kCream,
       appBar: AppBar(
@@ -638,9 +689,7 @@ class ResultScreen extends StatelessWidget {
                     color: item.color,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: item.textColor.withOpacity(0.3),
-                      width: 1,
-                    ),
+                        color: item.textColor.withOpacity(0.3), width: 1),
                   ),
                   child: Column(
                     children: [
@@ -679,8 +728,7 @@ class ResultScreen extends StatelessWidget {
                     color: kCardBg,
                     borderRadius: BorderRadius.circular(10),
                     border: const Border(
-                      left: BorderSide(color: Color(0xFFC2410C), width: 3),
-                    ),
+                        left: BorderSide(color: Color(0xFFC2410C), width: 3)),
                   ),
                   child: Text(
                     item.tip,
@@ -722,10 +770,22 @@ class ResultScreen extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
+
+                // ── CTA BUTTON (now saves the item) ──
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      state.addItem(item);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('${item.name} marked as recycled!'),
+                          backgroundColor: kDarkGreen,
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                      Navigator.pop(context);
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: kDarkGreen,
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -759,8 +819,8 @@ class ProgressScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<RecycleState>();
     const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-    const heights = [0.55, 0.78, 0.38, 0.50, 0.65, 0.45, 0.60];
     const barColors = [
       Color(0xFFFFE066),
       Color(0xFFA4C8E1),
@@ -778,11 +838,11 @@ class ProgressScreen extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 400),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── TITLE ──
                   const Text(
                     'Your impact',
                     style: TextStyle(
@@ -798,16 +858,14 @@ class ProgressScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  // ── THIS WEEK CARD ──
+                  // ── CHART ──
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: kDarkGreen.withOpacity(0.15),
-                        width: 1,
-                      ),
+                          color: kDarkGreen.withOpacity(0.15), width: 1),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -821,33 +879,30 @@ class ProgressScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 16),
-
-                        // BAR CHART
                         SizedBox(
                           height: 120,
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: List.generate(7, (i) {
+                              final h = state.weeklyData[i];
                               return Expanded(
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 3,
-                                  ),
+                                      horizontal: 3),
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
                                       Flexible(
                                         child: FractionallySizedBox(
-                                          heightFactor: heights[i],
+                                          heightFactor: h,
                                           child: Container(
                                             decoration: BoxDecoration(
                                               color: barColors[i],
                                               borderRadius:
                                                   BorderRadius.circular(4),
                                               border: Border.all(
-                                                color: kDarkGreen.withOpacity(
-                                                  0.2,
-                                                ),
+                                                color: kDarkGreen
+                                                    .withOpacity(0.2),
                                                 width: 0.5,
                                               ),
                                             ),
@@ -882,9 +937,7 @@ class ProgressScreen extends StatelessWidget {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: kDarkGreen.withOpacity(0.15),
-                        width: 1,
-                      ),
+                          color: kDarkGreen.withOpacity(0.15), width: 1),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -901,24 +954,39 @@ class ProgressScreen extends StatelessWidget {
                         const SizedBox(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: const [
+                          children: [
                             BadgeWidget(
                               label: '01',
                               title: 'First plastic',
-                              color: Color(0xFFFFE066),
-                              textColor: Color(0xFF5C4500),
+                              color: state.hasFirstPlastic
+                                  ? const Color(0xFFFFE066)
+                                  : Colors.grey.shade200,
+                              textColor: state.hasFirstPlastic
+                                  ? const Color(0xFF5C4500)
+                                  : Colors.grey,
+                              unlocked: state.hasFirstPlastic,
                             ),
                             BadgeWidget(
                               label: '07',
                               title: '7-day streak',
-                              color: Color(0xFF5B8C5A),
-                              textColor: Colors.white,
+                              color: state.has7DayStreak
+                                  ? const Color(0xFF5B8C5A)
+                                  : Colors.grey.shade200,
+                              textColor: state.has7DayStreak
+                                  ? Colors.white
+                                  : Colors.grey,
+                              unlocked: state.has7DayStreak,
                             ),
                             BadgeWidget(
                               label: '25',
                               title: '25 items',
-                              color: Color(0xFFA4C8E1),
-                              textColor: Color(0xFF1A3A52),
+                              color: state.has25Items
+                                  ? const Color(0xFFA4C8E1)
+                                  : Colors.grey.shade200,
+                              textColor: state.has25Items
+                                  ? const Color(0xFF1A3A52)
+                                  : Colors.grey,
+                              unlocked: state.has25Items,
                             ),
                           ],
                         ),
@@ -927,7 +995,7 @@ class ProgressScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
 
-                  // ── IMPACT STAT ──
+                  // ── IMPACT STAT (real) ──
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
@@ -936,18 +1004,18 @@ class ProgressScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(
-                      children: const [
+                      children: [
                         Text(
-                          '18',
-                          style: TextStyle(
+                          '${state.bottleEquivalent}',
+                          style: const TextStyle(
                             fontSize: 48,
                             fontWeight: FontWeight.bold,
                             color: kYellow,
                             height: 1,
                           ),
                         ),
-                        SizedBox(height: 6),
-                        Text(
+                        const SizedBox(height: 6),
+                        const Text(
                           "plastic bottles' worth of\nwaste recycled this month",
                           textAlign: TextAlign.center,
                           style: TextStyle(
@@ -975,6 +1043,7 @@ class BadgeWidget extends StatelessWidget {
   final String title;
   final Color color;
   final Color textColor;
+  final bool unlocked;
 
   const BadgeWidget({
     super.key,
@@ -982,30 +1051,39 @@ class BadgeWidget extends StatelessWidget {
     required this.title,
     required this.color,
     required this.textColor,
+    required this.unlocked,
   });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            border: Border.all(color: kDarkGreen.withOpacity(0.2), width: 1),
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: textColor,
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: Border.all(
+                    color: kDarkGreen.withOpacity(0.2), width: 1),
+              ),
+              child: Center(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
+                ),
               ),
             ),
-          ),
+            if (!unlocked)
+              const Icon(Icons.lock, size: 20, color: Colors.grey),
+          ],
         ),
         const SizedBox(height: 8),
         Text(
@@ -1021,8 +1099,7 @@ class BadgeWidget extends StatelessWidget {
   }
 }
 
-// ─── CATEGORY BUTTON WIDGET ───────────────────────────
-// ─── CATEGORY BUTTON WIDGET ───────────────────────────
+// ─── CATEGORY BUTTON ──────────────────────────────────
 class CategoryButton extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -1128,7 +1205,6 @@ class CategoryScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── HEADER ──
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
@@ -1160,8 +1236,6 @@ class CategoryScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // ── ITEM LIST ──
                 Expanded(
                   child: ListView.separated(
                     itemCount: filtered.length,
@@ -1179,9 +1253,7 @@ class CategoryScreen extends StatelessWidget {
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
+                              horizontal: 16, vertical: 14),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
