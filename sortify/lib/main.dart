@@ -931,69 +931,93 @@ class ProgressScreen extends StatelessWidget {
                   const SizedBox(height: 16),
 
                   // ── BADGES ──
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                          color: kDarkGreen.withOpacity(0.15), width: 1),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'BADGES EARNED',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.grey,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            BadgeWidget(
-                              label: '01',
-                              title: 'First plastic',
-                              color: state.hasFirstPlastic
-                                  ? const Color(0xFFFFE066)
-                                  : Colors.grey.shade200,
-                              textColor: state.hasFirstPlastic
-                                  ? const Color(0xFF5C4500)
-                                  : Colors.grey,
-                              unlocked: state.hasFirstPlastic,
-                            ),
-                            BadgeWidget(
-                              label: '07',
-                              title: '7-day streak',
-                              color: state.has7DayStreak
-                                  ? const Color(0xFF5B8C5A)
-                                  : Colors.grey.shade200,
-                              textColor: state.has7DayStreak
-                                  ? Colors.white
-                                  : Colors.grey,
-                              unlocked: state.has7DayStreak,
-                            ),
-                            BadgeWidget(
-                              label: '25',
-                              title: '25 items',
-                              color: state.has25Items
-                                  ? const Color(0xFFA4C8E1)
-                                  : Colors.grey.shade200,
-                              textColor: state.has25Items
-                                  ? const Color(0xFF1A3A52)
-                                  : Colors.grey,
-                              unlocked: state.has25Items,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+GestureDetector(
+  onTap: () => Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => const BadgesScreen()),
+  ),
+  child: Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: kDarkGreen.withOpacity(0.15), width: 1),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: const [
+            Text(
+              'BADGES EARNED',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: Colors.grey,
+                letterSpacing: 1.5,
+              ),
+            ),
+            Row(
+              children: [
+                Text(
+                  'See all',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: kDarkGreen,
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(height: 16),
+                ),
+                SizedBox(width: 4),
+                Icon(Icons.arrow_forward_ios, size: 12, color: kDarkGreen),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            BadgeWidget(
+              label: '01',
+              title: 'First plastic',
+              color: state.hasFirstPlastic
+                  ? const Color(0xFFFFE066)
+                  : Colors.grey.shade200,
+              textColor: state.hasFirstPlastic
+                  ? const Color(0xFF5C4500)
+                  : Colors.grey,
+              unlocked: state.hasFirstPlastic,
+            ),
+            BadgeWidget(
+              label: '07',
+              title: '7-day streak',
+              color: state.has7DayStreak
+                  ? const Color(0xFF5B8C5A)
+                  : Colors.grey.shade200,
+              textColor: state.has7DayStreak
+                  ? Colors.white
+                  : Colors.grey,
+              unlocked: state.has7DayStreak,
+            ),
+            BadgeWidget(
+              label: '25',
+              title: '25 items',
+              color: state.has25Items
+                  ? const Color(0xFFA4C8E1)
+                  : Colors.grey.shade200,
+              textColor: state.has25Items
+                  ? const Color(0xFF1A3A52)
+                  : Colors.grey,
+              unlocked: state.has25Items,
+            ),
+          ],
+        ),
+      ],
+    ),
+  ),
+),
+                  
 
                   // ── IMPACT STAT (real) ──
                   Container(
@@ -1299,6 +1323,268 @@ class CategoryScreen extends StatelessWidget {
                     },
                   ),
                 ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+  // ─── BADGES SCREEN ────────────────────────────────────
+class BadgesScreen extends StatelessWidget {
+  const BadgesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<RecycleState>();
+
+    final badges = [
+      {
+        'label': '01',
+        'title': 'First Plastic',
+        'description': 'Recycle your first plastic item.',
+        'hint': 'Search for any plastic item and tap Mark as recycled.',
+        'unlocked': state.hasFirstPlastic,
+        'color': const Color(0xFFFFE066),
+        'textColor': const Color(0xFF5C4500),
+      },
+      {
+        'label': '07',
+        'title': '7-Day Streak',
+        'description': 'Recycle at least 7 items in total.',
+        'hint': 'Keep logging items every day to build your streak.',
+        'unlocked': state.has7DayStreak,
+        'color': const Color(0xFF5B8C5A),
+        'textColor': Colors.white,
+      },
+      {
+        'label': '25',
+        'title': '25 Items',
+        'description': 'Log 25 recycled items in total.',
+        'hint': 'You\'re on your way — keep recycling!',
+        'unlocked': state.has25Items,
+        'color': const Color(0xFFA4C8E1),
+        'textColor': const Color(0xFF1A3A52),
+      },
+    ];
+
+    final unlockedCount = badges.where((b) => b['unlocked'] == true).length;
+
+    return Scaffold(
+      backgroundColor: kCream,
+      appBar: AppBar(
+        backgroundColor: kCream,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: kDarkGreen),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Badges',
+          style: TextStyle(
+            color: kDarkGreen,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+      ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+
+                // ── PROGRESS HEADER ──
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: kDarkGreen,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '$unlockedCount of ${badges.length} badges earned',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: LinearProgressIndicator(
+                                value: unlockedCount / badges.length,
+                                minHeight: 8,
+                                backgroundColor: Colors.white24,
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  Color(0xFFFFE066),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Text(
+                        '${(unlockedCount / badges.length * 100).round()}%',
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFFFE066),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // ── BADGE LIST ──
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: badges.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final badge = badges[index];
+                      final unlocked = badge['unlocked'] as bool;
+                      final color = unlocked
+                          ? badge['color'] as Color
+                          : Colors.grey.shade200;
+                      final textColor = unlocked
+                          ? badge['textColor'] as Color
+                          : Colors.grey;
+
+                      return Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: unlocked
+                                ? kDarkGreen.withOpacity(0.2)
+                                : Colors.grey.shade200,
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            // Badge circle
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Container(
+                                  width: 64,
+                                  height: 64,
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: kDarkGreen.withOpacity(0.15),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      badge['label'] as String,
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: unlocked
+                                            ? textColor
+                                            : Colors.grey.shade400,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                if (!unlocked)
+                                  const Icon(
+                                    Icons.lock,
+                                    size: 22,
+                                    color: Colors.grey,
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(width: 16),
+
+                            // Badge info
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        badge['title'] as String,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: unlocked
+                                              ? kDarkGreen
+                                              : Colors.grey,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      if (unlocked)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFE8F0E2),
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                          ),
+                                          child: const Text(
+                                            'Earned',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Color(0xFF2A4D1F),
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    badge['description'] as String,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: unlocked
+                                          ? Colors.grey.shade600
+                                          : Colors.grey.shade400,
+                                    ),
+                                  ),
+                                  if (!unlocked) ...[
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      badge['hint'] as String,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF5B8C5A),
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 20),
               ],
             ),
           ),
